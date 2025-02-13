@@ -457,6 +457,8 @@ class CSVEditorApp:
             return
             
         try:
+            # call change row 0 to update saved row values, so no pop up dialog
+            self.change_row(0)
             with open(self.filename, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(self.headers)

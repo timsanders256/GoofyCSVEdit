@@ -91,7 +91,6 @@ class CSVEditorApp:
         # When window lost focus, hide the context menu
         self.master.bind("<FocusOut>", lambda e: self.context_menu.unpost())
 
-   # Add these methods to your class
     def show_context_menu(self, event):
         """Show the shared context menu at the right-click location."""
         self.current_context_entry = event.widget
@@ -190,7 +189,6 @@ class CSVEditorApp:
             # pop up dialog
             messagebox.showinfo("Info", f"You have added row {insert_position + 1}")
 
-    # [Previous methods remain the same]
     def open_file(self):
         new_filename = filedialog.askopenfilename(
             filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
@@ -449,7 +447,6 @@ class CSVEditorApp:
             "GoofyCSVEditor v0.1\nThis is a goofy CSV editor with row and column management features.\n\n\n" \
             "Author: \nZhaochen Hong(timsanders256@gmail.com)\n",
         )
-            
 
 def main():
     root = tk.Tk()

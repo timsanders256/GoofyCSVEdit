@@ -456,6 +456,9 @@ class CSVEditorApp:
         
         search_entry.bind('<KeyRelease-Return>', lambda e: self.search_next(self.texts[self.col_idx_now], status_label))
 
+        # bind focus out to close
+        popup.bind('<FocusOut>', lambda e: on_close())
+
         # bind close to clear flag
         search_entry.bind('<Destroy>', lambda e: setattr(self, 'search_popup_on', False))
 
@@ -588,7 +591,7 @@ class CSVEditorApp:
 
             for data_col in range(len(self.headers)):
                 self.current_row_values.append(row_data[data_col])
-            
+
             self.update_data_display()
         else:
             if self.current_row == 0:

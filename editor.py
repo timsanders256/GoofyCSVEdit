@@ -399,6 +399,11 @@ class CSVEditorApp:
         self.update_data_display()
     
     def change_row(self, delta):
+        """
+        Change the current row by delta.
+        Update the data display and saved current row original values.
+        If delta is 0, update current row values only.
+        """
         if 0 <= self.current_row + delta < len(self.rows):
             # check if content is the same
             old_row_content = self.current_row_values
@@ -408,7 +413,7 @@ class CSVEditorApp:
                 if old_row_content[i] != new_row_content[i]:
                     diff = True
                     break
-            if diff:
+            if diff and delta != 0:
                 val = messagebox.askyesnocancel(
                     "Warning", 
                     f"Confirm to override the current row content and move on?"

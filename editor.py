@@ -90,6 +90,17 @@ class CSVEditorApp:
    
         # When window lost focus, hide the context menu
         self.master.bind("<FocusOut>", lambda e: self.context_menu.unpost())
+    
+    def map_visible_idx_to_col_idx(self, col_idx):
+        """Map the visible column index to the actual column index in the data."""
+        # find the pair from self.column_visibility that is the col_idx+1 th visible
+        col_idx_converted = 0
+        for i, visible in enumerate(self.column_visibility):
+            if visible:
+                if col_idx_converted == col_idx:
+                    return i
+                col_idx_converted += 1
+        return -1
 
     def show_context_menu(self, event):
         """Show the shared context menu at the right-click location."""
@@ -100,7 +111,7 @@ class CSVEditorApp:
         """Revert the text widget to its original value."""
         widget = event.widget
         col_idx = widget.col_idx
-        original_value = self.current_row_values[col_idx]
+        original_value = self.current_row_values[self.map_visible_idx_to_col_idx(col_idx)]
         widget.delete("1.0", tk.END)
         widget.insert(tk.END, original_value)
 
@@ -136,7 +147,7 @@ class CSVEditorApp:
     def menu_undo(self):
         if hasattr(self, 'current_context_entry') and self.current_context_entry:
             col_idx = self.current_context_entry.col_idx
-            original_value = self.current_row_values[col_idx]
+            original_value = self.current_row_values[self.map_visible_idx_to_col_idx(col_idx)]
             self.current_context_entry.delete("1.0", tk.END)
             self.current_context_entry.insert(tk.END, original_value)
 
@@ -282,6 +293,9 @@ class CSVEditorApp:
         self.status_bar = ttk.Label(status_bar_frame, text="Ready", anchor=tk.W)
         self.status_bar.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
+        # Change row to the first row
+        self.change_row(0)
+
     def open_new_file(self):
         if self.modified:
             if messagebox.askyesno("Save Changes", "Do you want to save changes to the current file?"):
@@ -316,7 +330,7 @@ class CSVEditorApp:
             return
         row_data = self.rows[self.current_row]
         visible_cols = [i for i, visible in enumerate(self.column_visibility) if visible]        
-        self.current_row_values = []
+
 
         if not visible_cols:
             # occupy the entire place with a shadow
@@ -327,7 +341,6 @@ class CSVEditorApp:
             return
 
         for col_idx, data_col in enumerate(visible_cols):
-            self.current_row_values.append(row_data[data_col])
 
             col_frame = ttk.LabelFrame(self.data_frame, text=self.headers[data_col])
             col_frame.grid(row=0, column=col_idx, padx=5, pady=5, sticky='nsew', ipadx=5, ipady=5)
@@ -409,6 +422,13 @@ class CSVEditorApp:
             
             self.row_label.config(text=f"Row {self.current_row + 1} of {len(self.rows)}")
             self.current_row += delta
+
+            row_data = self.rows[self.current_row]
+            self.current_row_values = []
+
+            for data_col in range(len(self.headers)):
+                self.current_row_values.append(row_data[data_col])
+            
             self.update_data_display()
         else:
             if self.current_row == 0:
@@ -432,7 +452,7 @@ class CSVEditorApp:
             return
             
         try:
-            with open(self.filename, 'w', newline='', encoding='utf-8') as f:
+            with open(self.filename, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(self.headers)
                 writer.writerows(self.rows)

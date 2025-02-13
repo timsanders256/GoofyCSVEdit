@@ -261,15 +261,25 @@ class CSVEditorApp:
         # Row controls
         control_frame = ttk.Frame(self.main_frame)
         control_frame.pack(fill=tk.X, pady=5)
-        
+
+        label_hint_prev = ttk.Label(control_frame, text="Ctrl+p")
+        label_hint_next = ttk.Label(control_frame, text="Ctrl+n")
+
+        label_hint_prev.pack(side=tk.LEFT, padx=5)
         ttk.Button(control_frame, text="◀", width=3, 
                  command=lambda: self.change_row(-1)).pack(side=tk.LEFT)
         self.row_label = ttk.Label(control_frame, text=f"Row {self.current_row + 1} of {len(self.rows)}")
         self.row_label.pack(side=tk.LEFT, padx=5)
         ttk.Button(control_frame, text="▶", width=3,
                  command=lambda: self.change_row(1)).pack(side=tk.LEFT)
+        label_hint_next.pack(side=tk.LEFT, padx=5)
         ttk.Button(control_frame, text="Add Row", 
                  command=self.add_row).pack(side=tk.LEFT, padx=10)
+        
+        # Bind ctrl+p to previous row
+        self.master.bind('<Control-p>', lambda e: self.change_row(-1))
+        # Bind ctrl+n to next row
+        self.master.bind('<Control-n>', lambda e: self.change_row(1))
         
         ttk.Button(control_frame, text="?", command=self.about, width=2).pack(side=tk.RIGHT)
         ttk.Button(control_frame, text="📂", command=self.open_new_file, width=2).pack(side=tk.RIGHT)

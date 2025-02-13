@@ -339,6 +339,14 @@ class CSVEditorApp:
             )
             cb.pack(side=tk.LEFT)
 
+
+    def select_all(self, event):
+        # event.widget.tag_add("sel", "1.0", "end")
+        # just simulate a ctrl+/ press for universal a
+        # pplication to entry, text
+        event.widget.event_generate("<Control-slash>")
+        return "break"
+
     def update_data_display(self):
         for widget in self.data_frame.winfo_children():
             widget.destroy()
@@ -386,6 +394,8 @@ class CSVEditorApp:
             entry.bind("<Button-3>", 
                 lambda event: self.show_context_menu(event))
             
+            entry.bind('<Control-a>', self.select_all)
+            
             entry.bind('<Control-z>', self.handle_undo)
             # Bind Ctrl+H to show search popup
             entry.bind('<Control-f>', self.show_search_popup)
@@ -424,24 +434,27 @@ class CSVEditorApp:
         search_entry = ttk.Entry(popup)
         search_entry.pack(fill=tk.X, padx=5, pady=5)
         search_entry.focus_set()
+
+        # Bind ctrl+a to select all
+        search_entry.bind('<Control-a>', self.select_all)
         
         buttons_frame = ttk.Frame(popup)
         buttons_frame.pack(fill=tk.X, padx=5, pady=5)
         
         prev_button = ttk.Button(buttons_frame, text="Previous",
-                                command=lambda: self.search_prev(self.texts[self.col_idx_now], status_label))
-        prev_button.pack(side=tk.LEFT)
+                    command=lambda: self.search_prev(self.texts[self.col_idx_now], status_label))
+        prev_button.pack(side=tk.LEFT, padx=5)
         
+        status_label = ttk.Label(buttons_frame, text="Matches: 0")
+        status_label.pack(side=tk.LEFT, padx=5)
+
         next_button = ttk.Button(buttons_frame, text="Next",
-                                command=lambda: self.search_next(self.texts[self.col_idx_now], status_label))
-        next_button.pack(side=tk.RIGHT)
-        
-        status_label = ttk.Label(popup, text="Matches: 0")
-        status_label.pack()
+                    command=lambda: self.search_next(self.texts[self.col_idx_now], status_label))
+        next_button.pack(side=tk.LEFT, padx=5)
         
         search_entry.bind('<KeyRelease>', lambda e: self.update_search(self.texts[self.col_idx_now], search_entry.get(), status_label))
         
-        search_entry.bind('<Return>', lambda e: self.search_next(self.texts[self.col_idx_now], status_label))
+        search_entry.bind('<KeyRelease-Return>', lambda e: self.search_next(self.texts[self.col_idx_now], status_label))
 
         # bind close to clear flag
         search_entry.bind('<Destroy>', lambda e: setattr(self, 'search_popup_on', False))

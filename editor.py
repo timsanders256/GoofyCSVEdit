@@ -88,6 +88,9 @@ class CSVEditorApp:
         # Bind left-click on master to hide the context menu
         self.master.bind("<Button-1>", lambda e: self.context_menu.unpost())
    
+        # When window lost focus, hide the context menu
+        self.master.bind("<FocusOut>", lambda e: self.context_menu.unpost())
+
    # Add these methods to your class
     def show_context_menu(self, event):
         """Show the shared context menu at the right-click location."""

@@ -62,6 +62,8 @@ class CSVEditorApp:
         self.modified = False
         self.main_frame = None
         self.current_row_values = []
+        self.texts = []
+        self.search_popup_on = False
         
         # Configure style
         self.style = ttk.Style()
@@ -79,9 +81,13 @@ class CSVEditorApp:
 
         self.context_menu = tk.Menu(self.master, tearoff=0)
         self.context_menu.add_command(label="Select All", command=self.menu_select_all)
+        self.context_menu.add_command(label="Search", command=self.menu_search)
+        
+        self.context_menu.add_separator()
         self.context_menu.add_command(label="Cut", command=self.menu_cut)
         self.context_menu.add_command(label="Copy", command=self.menu_copy)
         self.context_menu.add_command(label="Paste", command=self.menu_paste)
+        self.context_menu.add_separator()
         self.context_menu.add_command(label="Undo", command=self.menu_undo)
         self.context_menu.add_command(label="Delete", command=self.menu_delete)
 
@@ -90,6 +96,12 @@ class CSVEditorApp:
    
         # When window lost focus, hide the context menu
         self.master.bind("<FocusOut>", lambda e: self.context_menu.unpost())
+    
+    def on_close(self):
+        if self.modified:
+            if messagebox.askyesno("Save Changes", "Do you want to save changes to the current file?"):
+                self.save_changes()
+        self.master.destroy()
     
     def map_visible_idx_to_col_idx(self, col_idx):
         """Map the visible column index to the actual column index in the data."""
@@ -132,6 +144,10 @@ class CSVEditorApp:
             # first remove all selected text
             self.current_context_entry.delete("sel.first", "sel.last")
             self.current_context_entry.event_generate("<<Paste>>")
+
+    def menu_search(self):
+        if hasattr(self, 'current_context_entry') and self.current_context_entry:
+            self.current_context_entry.event_generate("<Control-f>")
 
     def event_paste(self, event):
         # check if there is the sel
@@ -331,47 +347,48 @@ class CSVEditorApp:
         row_data = self.rows[self.current_row]
         visible_cols = [i for i, visible in enumerate(self.column_visibility) if visible]        
 
-
         if not visible_cols:
-            # occupy the entire place with a shadow
             frame = ttk.Frame(self.data_frame)
             ttk.Label(frame, text="", background="#f0f0f0", style="Centered.TLabel").pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-            # expand x and y
             frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
             return
 
-        for col_idx, data_col in enumerate(visible_cols):
+        self.texts = []
 
+        for col_idx, data_col in enumerate(visible_cols):
             col_frame = ttk.LabelFrame(self.data_frame, text=self.headers[data_col])
             col_frame.grid(row=0, column=col_idx, padx=5, pady=5, sticky='nsew', ipadx=5, ipady=5)
-            # col_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
             
             scrollbar = ttk.Scrollbar(col_frame, orient=tk.VERTICAL)
             scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
             
-            entry = tk.Text(col_frame, wrap=tk.WORD, yscrollcommand=scrollbar.set, width=100000) # fine, I give up
+            entry = tk.Text(col_frame, wrap=tk.WORD, yscrollcommand=scrollbar.set, width=100000)
             entry.insert(tk.END, row_data[data_col])
             entry.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-            entry.col_idx = col_idx  # Store the visible column index
+            entry.col_idx = col_idx
+
+            self.texts.append(entry)
 
             entry.bind('<FocusIn>', 
                 lambda e, idx=col_idx: setattr(self, 'col_idx_now', idx))
+            
+            # Focus out to clear all highlight by removing the tags search_highlight and current_match
+            def remove_highlight_tags(event):
+                event.widget.tag_remove("search_highlight", "1.0", tk.END)
+                event.widget.tag_remove("current_match", "1.0", tk.END)
+                if hasattr(event.widget, 'search_matches'):
+                    del event.widget.search_matches
+                if hasattr(event.widget, 'current_match'):
+                    del event.widget.current_match
+            
+            entry.bind('<FocusOut>', remove_highlight_tags)
 
-            # Bind right-click to show the shared context menu
             entry.bind("<Button-3>", 
                 lambda event: self.show_context_menu(event))
-        
-            # Bind ctrl+a to select all
-            def select_all(event):
-                event.widget.tag_add("sel", "1.0", "end")
-                return "break"
-            entry.bind('<Control-a>', select_all)
-
-            # Bind ctrl+v to self.menu_paste
-            entry.bind('<Control-v>', self.event_paste)
-
-            # Bind ctrl+z to undo using the stored column index
+            
             entry.bind('<Control-z>', self.handle_undo)
+            # Bind Ctrl+H to show search popup
+            entry.bind('<Control-f>', self.show_search_popup)
 
             scrollbar.config(command=entry.yview)
             entry.bind('<KeyRelease>', 
@@ -381,6 +398,131 @@ class CSVEditorApp:
             
         self.data_frame.rowconfigure(0, weight=1)
         self.row_label.config(text=f"Row {self.current_row + 1} of {len(self.rows)}")
+
+    def handle_undo(self, event):
+        """Revert the text widget to its original value."""
+        widget = event.widget
+        col_idx = widget.col_idx
+        original_value = self.current_row_values[self.map_visible_idx_to_col_idx(col_idx)]
+        widget.delete("1.0", tk.END)
+        widget.insert(tk.END, original_value)
+
+    def show_search_popup(self, event):
+        if self.search_popup_on:
+            return
+
+        self.search_popup_on = True
+
+        # text_widget = event.widget
+
+        popup = tk.Toplevel(self.master)
+        popup.title("Search")
+
+        # always on top
+        popup.wm_attributes("-topmost", 1)
+        
+        search_entry = ttk.Entry(popup)
+        search_entry.pack(fill=tk.X, padx=5, pady=5)
+        search_entry.focus_set()
+        
+        buttons_frame = ttk.Frame(popup)
+        buttons_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        prev_button = ttk.Button(buttons_frame, text="Previous",
+                                command=lambda: self.search_prev(self.texts[self.col_idx_now], status_label))
+        prev_button.pack(side=tk.LEFT)
+        
+        next_button = ttk.Button(buttons_frame, text="Next",
+                                command=lambda: self.search_next(self.texts[self.col_idx_now], status_label))
+        next_button.pack(side=tk.RIGHT)
+        
+        status_label = ttk.Label(popup, text="Matches: 0")
+        status_label.pack()
+        
+        search_entry.bind('<KeyRelease>', lambda e: self.update_search(self.texts[self.col_idx_now], search_entry.get(), status_label))
+        
+        search_entry.bind('<Return>', lambda e: self.search_next(self.texts[self.col_idx_now], status_label))
+
+        # bind close to clear flag
+        search_entry.bind('<Destroy>', lambda e: setattr(self, 'search_popup_on', False))
+
+        def on_close():
+            self.texts[self.col_idx_now].tag_remove("search_highlight", "1.0", tk.END)
+            self.texts[self.col_idx_now].tag_remove("current_match", "1.0", tk.END)
+            if hasattr(self.texts[self.col_idx_now], 'search_matches'):
+                del self.texts[self.col_idx_now].search_matches
+            if hasattr(self.texts[self.col_idx_now], 'current_match'):
+                del self.texts[self.col_idx_now].current_match
+            self.search_popup_on = False
+            popup.destroy()
+            
+        popup.protocol("WM_DELETE_WINDOW", on_close)
+
+    def update_search(self, text_widget, search_term, status_label):
+        text_widget.tag_remove("search_highlight", "1.0", tk.END)
+        text_widget.tag_remove("current_match", "1.0", tk.END)
+        
+        if not search_term:
+            status_label.config(text="Matches: 0")
+            return
+        
+        start = "1.0"
+        matches = []
+        while True:
+            pos = text_widget.search(search_term, start, stopindex=tk.END, nocase=True)
+            if not pos:
+                break
+            end = f"{pos}+{len(search_term)}c"
+            matches.append((pos, end))
+            start = end
+        
+        for pos, end in matches:
+            text_widget.tag_add("search_highlight", pos, end)
+        text_widget.tag_config("search_highlight", background="yellow")
+        
+        status_label.config(text=f"Matches: {len(matches)}")
+        
+        if matches:
+            text_widget.search_matches = matches
+            text_widget.current_match = 0
+            text_widget.tag_add("current_match", matches[0][0], matches[0][1])
+            text_widget.tag_config("current_match", background="orange")
+            text_widget.mark_set(tk.INSERT, matches[0][0])
+            text_widget.see(tk.INSERT)
+            status_label.config(text=f"Match 1 of {len(matches)}")
+        else:
+            text_widget.search_matches = []
+            text_widget.current_match = -1
+
+    def search_next(self, text_widget, status_label):
+        if not hasattr(text_widget, 'search_matches') or not text_widget.search_matches:
+            return
+        current = text_widget.current_match
+        if current == -1:
+            return
+        text_widget.tag_remove("current_match", text_widget.search_matches[current][0], text_widget.search_matches[current][1])
+        new_current = (current + 1) % len(text_widget.search_matches)
+        text_widget.current_match = new_current
+        pos, end = text_widget.search_matches[new_current]
+        text_widget.tag_add("current_match", pos, end)
+        text_widget.mark_set(tk.INSERT, pos)
+        text_widget.see(pos)
+        status_label.config(text=f"Match {new_current + 1} of {len(text_widget.search_matches)}")
+
+    def search_prev(self, text_widget, status_label):
+        if not hasattr(text_widget, 'search_matches') or not text_widget.search_matches:
+            return
+        current = text_widget.current_match
+        if current == -1:
+            return
+        text_widget.tag_remove("current_match", text_widget.search_matches[current][0], text_widget.search_matches[current][1])
+        new_current = (current - 1) % len(text_widget.search_matches)
+        text_widget.current_match = new_current
+        pos, end = text_widget.search_matches[new_current]
+        text_widget.tag_add("current_match", pos, end)
+        text_widget.mark_set(tk.INSERT, pos)
+        text_widget.see(pos)
+        status_label.config(text=f"Match {new_current + 1} of {len(text_widget.search_matches)}")
 
     def show_menu(self, event, menu):
         menu.post(event.x_root, event.y_root)
@@ -471,7 +613,7 @@ class CSVEditorApp:
     def about(self):
         messagebox.showinfo(
             "About", 
-            "GoofyCSVEditor v0.1\nThis is a goofy CSV editor with row and column management features.\n\n\n" \
+            "GoofyCSVEditor v0.2\nThis is a goofy CSV editor with row and column management features.\n\n\n" \
             "Author: \nZhaochen Hong(timsanders256@gmail.com)\n",
         )
 

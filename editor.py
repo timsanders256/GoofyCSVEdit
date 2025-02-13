@@ -215,7 +215,7 @@ class CSVEditorApp:
     
     def load_csv(self):
         try:
-            with open(self.filename, 'r') as f:
+            with open(self.filename, 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
                 self.headers = next(reader, [])
                 self.rows = list(reader)
@@ -432,7 +432,7 @@ class CSVEditorApp:
             return
             
         try:
-            with open(self.filename, 'w', newline='') as f:
+            with open(self.filename, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
                 writer.writerow(self.headers)
                 writer.writerows(self.rows)

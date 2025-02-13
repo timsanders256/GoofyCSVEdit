@@ -69,7 +69,7 @@ class CSVEditorApp:
         self.style.configure('TButton', padding=5)
         self.style.configure('Header.TCheckbutton', background='#f0f0f0')
         
-        self.master.title("CSV Editor")
+        self.master.title("GoofyCSVEdit")
         self.master.geometry("800x600")
         
         # Create sample data
@@ -149,7 +149,7 @@ class CSVEditorApp:
         ]
         self.column_visibility = [True] * len(self.headers)
         self.filename = "Untitled.csv"
-        self.master.title(f"CSV Editor - {self.filename}")
+        self.master.title(f"GoofyCSVEdit - {self.filename}")
     
     def add_row(self):
         dialog = AddRowDialog(self.master, len(self.rows))
@@ -194,7 +194,7 @@ class CSVEditorApp:
         )
         if new_filename:
             self.filename = new_filename
-            self.master.title(f"CSV Editor - {self.filename}")
+            self.master.title(f"GoofyCSVEdit - {self.filename}")
             
             # Clear existing interface
             if self.main_frame:

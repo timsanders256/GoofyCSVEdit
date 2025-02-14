@@ -489,7 +489,7 @@ class CSVEditorApp:
         text_widget.tag_remove("current_match", "1.0", tk.END)
         
         if not search_term:
-            status_label.config(text="Matches: 0")
+            status_label.config(text="Ready")
             return
         
         start = "1.0"

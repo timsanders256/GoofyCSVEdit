@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import csv
 from datetime import datetime
+from importlib.resources import files
 
 class AddRowDialog:
     def __init__(self, parent, max_rows):
@@ -637,11 +638,33 @@ class CSVEditorApp:
             messagebox.showerror("Save Error", str(e))
 
     def about(self):
-        messagebox.showinfo(
-            "About", 
-            "GoofyCSVEditor v0.2\nThis is a goofy CSV editor with row and column management features.\n\n\n" \
-            "Author: \nZhaochen Hong(timsanders256@gmail.com)\n",
-        )
+        about_window = tk.Toplevel(self.master)
+        about_window.title("GoofyCSVEdit v0.2")
+        about_window.geometry("400x240")
+        about_window.transient(self.master)
+        about_window.grab_set()
+
+        # Center the dialog
+        about_window.geometry("+%d+%d" % (
+            self.master.winfo_rootx() + self.master.winfo_width()/2 - 150,
+            self.master.winfo_rooty() + self.master.winfo_height()/2 - 100))
+
+        # Add logo
+        try:
+            logo = tk.PhotoImage(file=files("goocsv") / "logo.png")
+            logo_label = ttk.Label(about_window, image=logo)
+            logo_label.image = logo  # Keep a reference to avoid garbage collection
+            logo_label.pack(pady=10)
+        except Exception as e:
+            # use a label there
+            logo_label = ttk.Label(about_window, text="GOOCSV\nedit like it's 1995")
+            logo_label.pack(pady=30)
+
+        # Add version info
+        link_label = ttk.Label(about_window, text="Get Updates\n(Repo URL to Clipboard)", wraplength=250, foreground="blue", cursor="hand2")
+        link_label.pack(pady=10)
+        link_label.bind("<Button-1>", lambda e: self.master.clipboard_append("https://github.com/timsanders256/GoofyCSVEdit"))
+        ttk.Button(about_window, text="OK", command=about_window.destroy).pack(pady=10)
 
 def main():
     root = tk.Tk()

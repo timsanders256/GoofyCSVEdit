@@ -455,7 +455,7 @@ class CSVEditorApp:
                     command=lambda: self.search_prev(self.texts[self.col_idx_now], status_label))
         prev_button.pack(side=tk.LEFT, padx=5)
         
-        status_label = ttk.Label(buttons_frame, text="Matches: 0")
+        status_label = ttk.Label(buttons_frame, text="Ready")
         status_label.pack(side=tk.LEFT, padx=5)
 
         next_button = ttk.Button(buttons_frame, text="Next",

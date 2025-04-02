@@ -510,19 +510,16 @@ class CSVEditorApp:
         # text_widget.tag_config("search_highlight", background="yellow")
         start = 0
         matches = []
-        text_content = text_widget.get("1.0", tk.END).lower()  # Get text content and convert to lowercase for case-insensitive search
+        text_content = text_widget.get("1.0", tk.END)  # Get text content
         search_term_lower = search_term.lower()
 
-        max_chars_per_line = int(text_widget.index("end-1c").split(".")[1])  # Convert to integer
-
         while True:
-            pos = text_content.find(search_term_lower, start)
+            pos = text_content.lower().find(search_term_lower, start)
             if pos == -1:
                 break
             
-            line, char = divmod(pos, max_chars_per_line)
-            start_index = f"{line + 1}.{char}"
-            end_index = f"{line + 1}.{char + len(search_term)}"
+            start_index = text_widget.index(f"1.0 + {pos} chars")  # Convert position to Tkinter index
+            end_index = text_widget.index(f"{start_index} + {len(search_term)} chars")
             matches.append((start_index, end_index))
             
             start = pos + len(search_term)  # Move past the last found occurrence
@@ -530,6 +527,7 @@ class CSVEditorApp:
         for start_index, end_index in matches:
             text_widget.tag_add("search_highlight", start_index, end_index)
         text_widget.tag_config("search_highlight", background="yellow")
+
 
         
         status_label.config(text=f"Matches: {len(matches)}")

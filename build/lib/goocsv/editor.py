@@ -675,8 +675,15 @@ class CSVEditorApp:
             self.master.winfo_rooty() + self.master.winfo_height()/2 - 100))
 
         # Add logo
-        logo_label = ttk.Label(about_window, text="GOOCSV\nedit like it's 1995")
-        logo_label.pack(pady=30)
+        try:
+            logo = tk.PhotoImage(file=files("goocsv") / "logo.png")
+            logo_label = ttk.Label(about_window, image=logo)
+            logo_label.image = logo  # Keep a reference to avoid garbage collection
+            logo_label.pack(pady=10)
+        except Exception as e:
+            # use a label there
+            logo_label = ttk.Label(about_window, text="GOOCSV\nedit like it's 1995")
+            logo_label.pack(pady=30)
 
         # Add version info
         link_label = ttk.Label(about_window, text="Get Updates\n(Repo URL to Clipboard)", wraplength=250, foreground="blue", cursor="hand2")

@@ -664,7 +664,7 @@ class CSVEditorApp:
 
     def about(self):
         about_window = tk.Toplevel(self.master)
-        about_window.title("GoofyCSVEdit v0.2")
+        about_window.title("GoofyCSVEdit v0.2.1")
         about_window.geometry("400x240")
         about_window.transient(self.master)
         about_window.grab_set()

@@ -493,19 +493,44 @@ class CSVEditorApp:
             status_label.config(text="Ready")
             return
         
-        start = "1.0"
-        matches = []
-        while True:
-            pos = text_widget.search(search_term, start, stopindex=tk.END, nocase=True)
-            if not pos:
-                break
-            end = f"{pos}+{len(search_term)}c"
-            matches.append((pos, end))
-            start = end
+        # start = "1.0"
+        # matches = []
+        # while True:
+            
+        #     pos = text_widget.search(search_term, start, stopindex=tk.END, nocase=True)
+        #     # pos = text_content.find(search_term.lower(), len(start) - 1)  # find the search term in the content
+        #     if not pos:
+        #         break
+        #     end = f"{pos}+{len(search_term)}c"
+        #     matches.append((pos, end))
+        #     start = end
         
-        for pos, end in matches:
-            text_widget.tag_add("search_highlight", pos, end)
+        # for pos, end in matches:
+        #     text_widget.tag_add("search_highlight", pos, end)
+        # text_widget.tag_config("search_highlight", background="yellow")
+        start = 0
+        matches = []
+        text_content = text_widget.get("1.0", tk.END).lower()  # Get text content and convert to lowercase for case-insensitive search
+        search_term_lower = search_term.lower()
+
+        max_chars_per_line = int(text_widget.index("end-1c").split(".")[1])  # Convert to integer
+
+        while True:
+            pos = text_content.find(search_term_lower, start)
+            if pos == -1:
+                break
+            
+            line, char = divmod(pos, max_chars_per_line)
+            start_index = f"{line + 1}.{char}"
+            end_index = f"{line + 1}.{char + len(search_term)}"
+            matches.append((start_index, end_index))
+            
+            start = pos + len(search_term)  # Move past the last found occurrence
+
+        for start_index, end_index in matches:
+            text_widget.tag_add("search_highlight", start_index, end_index)
         text_widget.tag_config("search_highlight", background="yellow")
+
         
         status_label.config(text=f"Matches: {len(matches)}")
         
